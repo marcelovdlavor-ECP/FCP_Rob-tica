@@ -1,12 +1,4 @@
 void setup() {
-#include<stido.h>
-  int main(){
-
-    printf("Hi");
-
-  return(0);
-  } 
-
 
 }
 

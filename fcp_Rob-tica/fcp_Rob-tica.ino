@@ -24,12 +24,9 @@
 #define CANAL_RPWM_DIR 2
 #define CANAL_LPWM_DIR 3
 
+#define LED_STATUS_PIN 2
 ControllerPtr controle = nullptr;
-
-// ======================================================
 // FUNÇÕES DE CONTROLE DE MOTORES
-// ======================================================
-
 void pararMotores() {
     ledcWrite(CANAL_RPWM_ESQ, 0);
     ledcWrite(CANAL_LPWM_ESQ, 0);
@@ -38,9 +35,7 @@ void pararMotores() {
 }
 
 void controlarMotores(ControllerPtr ctl) {
-    // ==========================================
     // MOTOR ESQUERDO
-    // ==========================================
     // R1 (Frente)
     if (ctl->r1()) {
         ledcWrite(CANAL_RPWM_ESQ, 255);
@@ -49,20 +44,14 @@ void controlarMotores(ControllerPtr ctl) {
     // R2 (Trás) - analogico/gatilho
     else if (ctl->r2()) {
         ledcWrite(CANAL_RPWM_ESQ, 0);
-        // Mapear valor do gatilho (0-1023 ou 0-255 dependendo do controle, assumindo 0-255)
-        // Se for um botão digital, pode ser só > 0 e colocar 255
-        // Como o Bluepad32 costuma retornar 0-1023 para triggers, vamos mapear ou usar 255
-        // Vou usar o valor proporcional se possível, mas como antes estava 255, manterei 255
         ledcWrite(CANAL_LPWM_ESQ, 255); 
     }
     else {
         ledcWrite(CANAL_RPWM_ESQ, 0);
         ledcWrite(CANAL_LPWM_ESQ, 0);
     }
-
-    // ==========================================
+    
     // MOTOR DIREITO
-    // ==========================================
     // L1 (Frente)
     if (ctl->l1()) {
         ledcWrite(CANAL_RPWM_DIR, 255);
@@ -79,14 +68,13 @@ void controlarMotores(ControllerPtr ctl) {
     }
 }
 
-// ======================================================
 // CALLBACKS DO BLUEPAD32
-// ======================================================
 
 void onConnectedController(ControllerPtr ctl) {
     if (controle == nullptr) {
         controle = ctl;
         Serial.println("Controle conectado!");
+        digitalWrite(LED_STATUS_PIN, HIGH); // Acende o LED azul
     }
 }
 
@@ -95,31 +83,29 @@ void onDisconnectedController(ControllerPtr ctl) {
         controle = nullptr;
         pararMotores();
         Serial.println("Controle desconectado!");
+        digitalWrite(LED_STATUS_PIN, LOW); // Apaga o LED azul
     }
 }
-
-// ======================================================
 // SETUP
-// ======================================================
-
 void setup() {
     Serial.begin(115200);
+
+     // Configura o pino do LED como saída e o mantém desligado inicialmente
+    pinMode(LED_STATUS_PIN, OUTPUT);
+    digitalWrite(LED_STATUS_PIN, LOW);
     
     // Otimização: Aumentar a velocidade do loop desabilitando logs desnecessários se possível
     // BP32.enableVirtualDevice(false);
-
-    // ==========================================
     // CONFIGURA PWM MOTOR ESQUERDO
-    // ==========================================
+  
     ledcSetup(CANAL_RPWM_ESQ, FREQUENCIA_PWM, RESOLUCAO_PWM);
     ledcAttachPin(RPWM_ESQ, CANAL_RPWM_ESQ);
 
     ledcSetup(CANAL_LPWM_ESQ, FREQUENCIA_PWM, RESOLUCAO_PWM);
     ledcAttachPin(LPWM_ESQ, CANAL_LPWM_ESQ);
-
-    // ==========================================
+  
     // CONFIGURA PWM MOTOR DIREITO
-    // ==========================================
+
     ledcSetup(CANAL_RPWM_DIR, FREQUENCIA_PWM, RESOLUCAO_PWM);
     ledcAttachPin(RPWM_DIR, CANAL_RPWM_DIR);
 
@@ -129,9 +115,8 @@ void setup() {
     // Inicializa estado dos motores como parados
     pararMotores();
 
-    // ==========================================
     // INICIA BLUETOOTH
-    // ==========================================
+
     BP32.setup(&onConnectedController, &onDisconnectedController);
     Serial.println("Aguardando controle Bluetooth...");
 }

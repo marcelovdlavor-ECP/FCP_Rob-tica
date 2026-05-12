@@ -1,130 +1,154 @@
 #include <Bluepad32.h>
 
-// --- Definição dos pinos dos motores ---
-#define MOTOR_ESQUERDO_PIN1 32 
-#define MOTOR_ESQUERDO_PIN2 33 
-#define PWM_ESQUERDO 12
+// ======================================================
+// CONFIGURAÇÃO DAS PONTES H BTS7960
+// ======================================================
 
-#define MOTOR_DIREITO_PIN1  25 
-#define MOTOR_DIREITO_PIN2  26 
-#define PWM_DIREITO  13
+// -------- MOTOR ESQUERDO --------
+#define RPWM_ESQ 12
+#define LPWM_ESQ 13
 
-// --- Configuração do PWM ---
-#define FREQ_PWM 5000
-#define RESOLUCAO 8
-#define CANAL_ESQUERDO 0
-#define CANAL_DIREITO 1
+// -------- MOTOR DIREITO --------
+#define RPWM_DIR 27
+#define LPWM_DIR 14
 
-ControllerPtr myControllers[BP32_MAX_GAMEPADS];
+// ======================================================
+// PWM ESP32
+// ======================================================
+#define FREQUENCIA_PWM 1000
+#define RESOLUCAO_PWM 8
 
-// Função para parar tudo
+#define CANAL_RPWM_ESQ 0
+#define CANAL_LPWM_ESQ 1
+
+#define CANAL_RPWM_DIR 2
+#define CANAL_LPWM_DIR 3
+
+ControllerPtr controle = nullptr;
+
+// ======================================================
+// FUNÇÕES DE CONTROLE DE MOTORES
+// ======================================================
+
 void pararMotores() {
-    ledcWrite(CANAL_ESQUERDO, 0);
-    ledcWrite(CANAL_DIREITO, 0);
-    digitalWrite(MOTOR_ESQUERDO_PIN1, LOW);
-    digitalWrite(MOTOR_ESQUERDO_PIN2, LOW);
-    digitalWrite(MOTOR_DIREITO_PIN1, LOW);
-    digitalWrite(MOTOR_DIREITO_PIN2, LOW);
+    ledcWrite(CANAL_RPWM_ESQ, 0);
+    ledcWrite(CANAL_LPWM_ESQ, 0);
+    ledcWrite(CANAL_RPWM_DIR, 0);
+    ledcWrite(CANAL_LPWM_DIR, 0);
 }
 
-void processGamepad(ControllerPtr ctl) {
-    // --- 1. EFEITOS DE LED E RUMBLE (Seu código original) ---
-
-    if (ctl->b()) {
-        static int led = 0;
-        led++;
-        ctl->setPlayerLEDs(led & 0x0f);
-    }
-
-    if (ctl->x()) {
-        ctl->playDualRumble(0, 250, 0x80, 0x40);
-    }
-
-    // --- 2. LÓGICA DE MOVIMENTAÇÃO (CONTROLE TIPO TANQUE) ---
-
-    // MOTOR ESQUERDO (L1 Frente / L2 Trás)
-    if (ctl->l1()) {
-        digitalWrite(MOTOR_ESQUERDO_PIN1, HIGH);
-        digitalWrite(MOTOR_ESQUERDO_PIN2, LOW);
-        ledcWrite(CANAL_ESQUERDO, 255);
-    } 
-    else if (ctl->l2()) {
-        digitalWrite(MOTOR_ESQUERDO_PIN1, LOW);
-        digitalWrite(MOTOR_ESQUERDO_PIN2, HIGH);
-        ledcWrite(CANAL_ESQUERDO, 255);
-    } 
-    else {
-        digitalWrite(MOTOR_ESQUERDO_PIN1, LOW);
-        digitalWrite(MOTOR_ESQUERDO_PIN2, LOW);
-        ledcWrite(CANAL_ESQUERDO, 0);
-    }
-
-    // MOTOR DIREITO (R1 Frente / R2 Trás)
+void controlarMotores(ControllerPtr ctl) {
+    // ==========================================
+    // MOTOR ESQUERDO
+    // ==========================================
+    // R1 (Frente)
     if (ctl->r1()) {
-        digitalWrite(MOTOR_DIREITO_PIN1, HIGH);
-        digitalWrite(MOTOR_DIREITO_PIN2, LOW);
-        ledcWrite(CANAL_DIREITO, 255);
-    } 
+        ledcWrite(CANAL_RPWM_ESQ, 255);
+        ledcWrite(CANAL_LPWM_ESQ, 0);
+    }
+    // R2 (Trás) - analogico/gatilho
     else if (ctl->r2()) {
-        digitalWrite(MOTOR_DIREITO_PIN1, LOW);
-        digitalWrite(MOTOR_DIREITO_PIN2, HIGH);
-        ledcWrite(CANAL_DIREITO, 255);
-    } 
+        ledcWrite(CANAL_RPWM_ESQ, 0);
+        // Mapear valor do gatilho (0-1023 ou 0-255 dependendo do controle, assumindo 0-255)
+        // Se for um botão digital, pode ser só > 0 e colocar 255
+        // Como o Bluepad32 costuma retornar 0-1023 para triggers, vamos mapear ou usar 255
+        // Vou usar o valor proporcional se possível, mas como antes estava 255, manterei 255
+        ledcWrite(CANAL_LPWM_ESQ, 255); 
+    }
     else {
-        digitalWrite(MOTOR_DIREITO_PIN1, LOW);
-        digitalWrite(MOTOR_DIREITO_PIN2, LOW);
-        ledcWrite(CANAL_DIREITO, 0);
+        ledcWrite(CANAL_RPWM_ESQ, 0);
+        ledcWrite(CANAL_LPWM_ESQ, 0);
+    }
+
+    // ==========================================
+    // MOTOR DIREITO
+    // ==========================================
+    // L1 (Frente)
+    if (ctl->l1()) {
+        ledcWrite(CANAL_RPWM_DIR, 255);
+        ledcWrite(CANAL_LPWM_DIR, 0);
+    }
+    // L2 (Trás) - analogico/gatilho
+    else if (ctl->l2()) {
+        ledcWrite(CANAL_RPWM_DIR, 0);
+        ledcWrite(CANAL_LPWM_DIR, 255);
+    }
+    else {
+        ledcWrite(CANAL_RPWM_DIR, 0);
+        ledcWrite(CANAL_LPWM_DIR, 0);
     }
 }
 
-// --- Funções obrigatórias da Bluepad32 ---
+// ======================================================
+// CALLBACKS DO BLUEPAD32
+// ======================================================
 
 void onConnectedController(ControllerPtr ctl) {
-    bool foundEmptySlot = false;
-    for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
-        if (myControllers[i] == nullptr) {
-            myControllers[i] = ctl;
-            foundEmptySlot = true;
-            break;
-        }
+    if (controle == nullptr) {
+        controle = ctl;
+        Serial.println("Controle conectado!");
     }
 }
 
 void onDisconnectedController(ControllerPtr ctl) {
-    for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
-        if (myControllers[i] == ctl) {
-            myControllers[i] = nullptr;
-            pararMotores();
-            break;
-        }
+    if (controle == ctl) {
+        controle = nullptr;
+        pararMotores();
+        Serial.println("Controle desconectado!");
     }
 }
+
+// ======================================================
+// SETUP
+// ======================================================
 
 void setup() {
     Serial.begin(115200);
+    
+    // Otimização: Aumentar a velocidade do loop desabilitando logs desnecessários se possível
+    // BP32.enableVirtualDevice(false);
 
-    // Configuração dos Pinos
-    pinMode(MOTOR_ESQUERDO_PIN1, OUTPUT);
-    pinMode(MOTOR_ESQUERDO_PIN2, OUTPUT);
-    pinMode(MOTOR_DIREITO_PIN1, OUTPUT);
-    pinMode(MOTOR_DIREITO_PIN2, OUTPUT);
+    // ==========================================
+    // CONFIGURA PWM MOTOR ESQUERDO
+    // ==========================================
+    ledcSetup(CANAL_RPWM_ESQ, FREQUENCIA_PWM, RESOLUCAO_PWM);
+    ledcAttachPin(RPWM_ESQ, CANAL_RPWM_ESQ);
 
-    // Setup do PWM
-    ledcSetup(CANAL_ESQUERDO, FREQ_PWM, RESOLUCAO);
-    ledcAttachPin(PWM_ESQUERDO, CANAL_ESQUERDO);
-    ledcSetup(CANAL_DIREITO, FREQ_PWM, RESOLUCAO);
-    ledcAttachPin(PWM_DIREITO, CANAL_DIREITO);
+    ledcSetup(CANAL_LPWM_ESQ, FREQUENCIA_PWM, RESOLUCAO_PWM);
+    ledcAttachPin(LPWM_ESQ, CANAL_LPWM_ESQ);
 
+    // ==========================================
+    // CONFIGURA PWM MOTOR DIREITO
+    // ==========================================
+    ledcSetup(CANAL_RPWM_DIR, FREQUENCIA_PWM, RESOLUCAO_PWM);
+    ledcAttachPin(RPWM_DIR, CANAL_RPWM_DIR);
+
+    ledcSetup(CANAL_LPWM_DIR, FREQUENCIA_PWM, RESOLUCAO_PWM);
+    ledcAttachPin(LPWM_DIR, CANAL_LPWM_DIR);
+
+    // Inicializa estado dos motores como parados
+    pararMotores();
+
+    // ==========================================
+    // INICIA BLUETOOTH
+    // ==========================================
     BP32.setup(&onConnectedController, &onDisconnectedController);
+    Serial.println("Aguardando controle Bluetooth...");
 }
 
+// ======================================================
+// LOOP
+// ======================================================
+
 void loop() {
+    // Atualiza o estado do Bluepad32 (processa eventos Bluetooth)
     BP32.update();
-    for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
-        ControllerPtr myController = myControllers[i];
-        if (myController && myController->isConnected()) {
-            processGamepad(myController);
-        }
+
+    if (controle && controle->isConnected()) {
+        controlarMotores(controle);
     }
-    delay(10);
+
+    // Otimização: Reduzir o delay para 1ms ou remover, permitindo leitura mais rápida.
+    // Como o ESP32 roda FreeRTOS por baixo, um delay de 1ms é suficiente para ceder processamento.
+    delay(1);
 }

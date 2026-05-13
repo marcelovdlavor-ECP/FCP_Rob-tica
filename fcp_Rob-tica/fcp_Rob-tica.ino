@@ -62,14 +62,6 @@ void onConnectedController(ControllerPtr ctl) {
         digitalWrite(LED_STATUS_PIN, HIGH); // Acende o LED azul
     }
 }
-void onDisconnectedController(ControllerPtr ctl) {
-    if (controle == ctl) {
-        controle = nullptr;
-        pararMotores();
-        Serial.println("Controle desconectado!");
-        digitalWrite(LED_STATUS_PIN, LOW); // Apaga o LED azul
-    }
-}
 // SETUP
 void setup() {
     Serial.begin(115200);

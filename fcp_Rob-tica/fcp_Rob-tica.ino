@@ -89,12 +89,9 @@ void setup() {
 
     ledcSetup(CANAL_LPWM_DIR, FREQUENCIA_PWM, RESOLUCAO_PWM);
     ledcAttachPin(LPWM_DIR, CANAL_LPWM_DIR);
-
     // Inicializa estado dos motores como parados
     pararMotores();
-
     // INICIA BLUETOOTH
-
     BP32.setup(&onConnectedController, &onDisconnectedController);
     Serial.println("Aguardando controle Bluetooth...");
 }

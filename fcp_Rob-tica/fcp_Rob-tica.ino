@@ -9,13 +9,10 @@
 // PWM ESP32
 #define FREQUENCIA_PWM 1000
 #define RESOLUCAO_PWM 8
-
 #define CANAL_RPWM_ESQ 0
 #define CANAL_LPWM_ESQ 1
-
 #define CANAL_RPWM_DIR 2
 #define CANAL_LPWM_DIR 3
-
 #define LED_STATUS_PIN 2
 ControllerPtr controle = nullptr;
 // FUNÇÕES DE CONTROLE DE MOTORES
@@ -25,7 +22,6 @@ void pararMotores() {
     ledcWrite(CANAL_RPWM_DIR, 0);
     ledcWrite(CANAL_LPWM_DIR, 0);
 }
-
 void controlarMotores(ControllerPtr ctl) {
     // MOTOR ESQUERDO
     // R1 (Frente)
@@ -58,9 +54,7 @@ void controlarMotores(ControllerPtr ctl) {
         ledcWrite(CANAL_LPWM_DIR, 0);
     }
 }
-
 // CALLBACKS DO BLUEPAD32
-
 void onConnectedController(ControllerPtr ctl) {
     if (controle == nullptr) {
         controle = ctl;
@@ -68,7 +62,6 @@ void onConnectedController(ControllerPtr ctl) {
         digitalWrite(LED_STATUS_PIN, HIGH); // Acende o LED azul
     }
 }
-
 void onDisconnectedController(ControllerPtr ctl) {
     if (controle == ctl) {
         controle = nullptr;
@@ -82,20 +75,15 @@ void setup() {
     Serial.begin(115200);
      // Configura o pino do LED como saída e o mantém desligado inicialmente
     pinMode(LED_STATUS_PIN, OUTPUT);
-    digitalWrite(LED_STATUS_PIN, LOW);
-    
+    digitalWrite(LED_STATUS_PIN, LOW);   
     // Otimização: Aumentar a velocidade do loop desabilitando logs desnecessários se possível
     // BP32.enableVirtualDevice(false);
     // CONFIGURA PWM MOTOR ESQUERDO
-  
     ledcSetup(CANAL_RPWM_ESQ, FREQUENCIA_PWM, RESOLUCAO_PWM);
     ledcAttachPin(RPWM_ESQ, CANAL_RPWM_ESQ);
-
     ledcSetup(CANAL_LPWM_ESQ, FREQUENCIA_PWM, RESOLUCAO_PWM);
     ledcAttachPin(LPWM_ESQ, CANAL_LPWM_ESQ);
-  
     // CONFIGURA PWM MOTOR DIREITO
-
     ledcSetup(CANAL_RPWM_DIR, FREQUENCIA_PWM, RESOLUCAO_PWM);
     ledcAttachPin(RPWM_DIR, CANAL_RPWM_DIR);
 

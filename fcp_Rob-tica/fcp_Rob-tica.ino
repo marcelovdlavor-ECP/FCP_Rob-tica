@@ -13,7 +13,8 @@
 #define CANAL_LPWM_ESQ 1
 #define CANAL_RPWM_DIR 2
 #define CANAL_LPWM_DIR 3
-#define LED_STATUS_PIN 2
+#define LED_AZUL_PIN 2
+#define LED_VERMELHO_PIN 4
 ControllerPtr controle = nullptr;
 // FUNÇÕES DE CONTROLE DE MOTORES
 void pararMotores() {
@@ -59,15 +60,36 @@ void onConnectedController(ControllerPtr ctl) {
     if (controle == nullptr) {
         controle = ctl;
         Serial.println("Controle conectado!");
-        digitalWrite(LED_STATUS_PIN, HIGH); // Acende o LED azul
+        digitalWrite(LED_AZUL_PIN, HIGH);
+        delay(2000);//FICA ACESO POR 2 SEGUNDOS
+        digitalWrite(LED_AZUL_PIN, LOW);
+        delay(500);//PAUSA
+        digitalWrite(LED_AZUL_PIN, HIGH);
+        delay(2000);//FICA ACESO POR 2 SEGUNDOS
+        digitalWrite(LED_AZUL_PIN, LOW);
+    }
+}
+void onDisconnectedController(ControllerPtr ctl) {
+    if (controle == ctl) {
+        controle = nullptr;
+        Serial.println("Controle desconectado!");
+        digitalWrite(LED_VERMELHO_PIN, HIGH);
+        delay(2000);//FICA ACESO POR 2 SEGUNDOS
+        digitalWrite(LED_VERMELHO_PIN, LOW);
+        delay(500);//PAUSA
+        digitalWrite(LED_VERMELHO_PIN, HIGH);
+        delay(2000);//FICA ACESO POR 2 SEGUNDOS
+        digitalWrite(LED_VERMELHO_PIN, LOW);
     }
 }
 // SETUP
 void setup() {
     Serial.begin(115200);
      // Configura o pino do LED como saída e o mantém desligado inicialmente
-    pinMode(LED_STATUS_PIN, OUTPUT);
-    digitalWrite(LED_STATUS_PIN, LOW);   
+    pinMode(LED_AZUL_PIN, OUTPUT);
+    pinMode(LED_VERMELHO_PIN, OUTPUT);
+    digitalWrite(LED_AZUL_PIN, LOW);
+    digitalWrite(LED_VERMELHO_PIN, LOW);
     // Otimização: Aumentar a velocidade do loop desabilitando logs desnecessários se possível
     // BP32.enableVirtualDevice(false);
     // CONFIGURA PWM MOTOR ESQUERDO

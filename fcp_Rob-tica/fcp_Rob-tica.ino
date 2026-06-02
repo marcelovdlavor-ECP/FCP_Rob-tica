@@ -1,9 +1,7 @@
 #include <Bluepad32.h>
 // CONFIGURAÇÃO DAS PONTES H BTS7960
-// -------- MOTOR ESQUERDO --------
 #define RPWM_ESQ 12
 #define LPWM_ESQ 13
-// -------- MOTOR DIREITO --------
 #define RPWM_DIR 27
 #define LPWM_DIR 14
 // PWM ESP32
@@ -24,7 +22,6 @@ void pararMotores() {
     ledcWrite(CANAL_LPWM_DIR, 0);
 }
 void controlarMotores(ControllerPtr ctl) {
-    // MOTOR ESQUERDO
     // R1 (Frente)
     if (ctl->r1()) {
         ledcWrite(CANAL_RPWM_ESQ, 255);
@@ -39,7 +36,6 @@ void controlarMotores(ControllerPtr ctl) {
         ledcWrite(CANAL_RPWM_ESQ, 0);
         ledcWrite(CANAL_LPWM_ESQ, 0);
     }
-    // MOTOR DIREITO
     // L1 (Frente)
     if (ctl->l1()) {
         ledcWrite(CANAL_RPWM_DIR, 255);
